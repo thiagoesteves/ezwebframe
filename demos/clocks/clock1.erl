@@ -3,8 +3,13 @@
 %%% NOTE: lines with three %%% show code when frames are introduced
 
 start(Browser) ->
-    Browser ! [{cmd,fill_div}, {id,clock}, {txt,current_time()}],
-    running(Browser).
+    receive
+        {From, websocketReady} ->
+        From ! [{cmd,fill_div}, {id,clock}, {txt,current_time()}],
+        running(From)
+    after 1000 ->
+        start(Browser)
+    end.
 
 running(Browser) ->
     receive

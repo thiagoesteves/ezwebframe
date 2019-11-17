@@ -33,9 +33,14 @@ test this in all known browsers.
 INSTALLATION
 ============
 
-This program uses rebar to fetch and install the necessary dependencies.
-First you need to install rebar. If you don't have rebar then you can install
-a pre-build binary from https://github.com/rebar/rebar/wiki/rebar.
+This program uses rebar3 to fetch and install the necessary dependencies.
+First you need to install rebar3. If you don't have rebar3 then you can install
+a pre-build binary from https://www.rebar3.org/ or:
+
+Installing rebar3 on Mac OS:
+<pre>
+   $ brew install rebar3
+</pre>
 
 To run the demos
 

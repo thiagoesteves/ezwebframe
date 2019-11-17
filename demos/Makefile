@@ -1,10 +1,10 @@
 ## set the paths for a default setup
 
 all: beam
-	erl -pa ../deps/cowboy/ebin\
-            -pa ../deps/ranch/ebin\
-            -pa ../deps/cowlib/ebin\
-            -pa ../ebin\
+	erl -pa ../_build/default/lib/cowboy/ebin\
+            -pa ../_build/default/lib/ranch/ebin\
+            -pa ../_build/default/lib/cowlib/ebin\
+            -pa ../_build/default/lib/ezwebframe/ebin\
 	    -pa ./ebin\
             -s ezwebframe_demos start
 

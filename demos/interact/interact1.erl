@@ -1,7 +1,13 @@
 -module(interact1).
 -export([start/1]).
 
-start(Browser) -> running(Browser).
+start(Browser) ->
+    receive
+        {From, websocketReady} ->
+        running(From)
+    after 1000 ->
+        start(Browser)
+    end.
 
 running(Browser) ->
     receive

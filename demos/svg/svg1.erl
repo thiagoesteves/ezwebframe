@@ -2,8 +2,13 @@
 -export([start/1]).
 
 start(Browser) ->
-    Browser ! [{cmd,add_canvas},{tag,svg},{width,180},{height,120}],
-    running(Browser, 10, 10).
+    receive
+        {From, websocketReady} ->
+            From ! [{cmd,add_canvas},{tag,svg},{width,180},{height,120}],
+            running(From, 10, 10)
+    after 1000 ->
+        start(Browser)
+    end.
 
 
 running(Browser, X, Y) ->

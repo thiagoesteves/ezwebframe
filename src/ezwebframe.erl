@@ -2,9 +2,9 @@
 
 -export([start_link/2,
 	 init/2,      
-	 websocket_handle/3, 
-	 terminate/3, websocket_terminate/3,
-	 websocket_info/3,
+	 websocket_handle/2, 
+	 terminate/3, websocket_terminate/2,
+	 websocket_info/2,websocket_init/1,
 	 append_div/3,
 	 pre/1,
 	 fill_div/3
@@ -19,6 +19,9 @@
 start_link(Dispatch, Port) ->
     io:format("Starting:~p~n",[file:get_cwd()]),
     ok = application:start(crypto),
+    ok = application:start(asn1),
+    ok = application:start(public_key),
+    ok = application:start(ssl),
     ok = application:start(ranch), 
     ok = application:start(cowlib), 
     ok = application:start(cowboy),
@@ -28,12 +31,12 @@ web_server_start(Port, Dispatcher) ->
     E0 = #env{dispatch=Dispatcher},
     Dispatch = cowboy_router:compile([{'_',[{'_', ?MODULE, E0}]}]),  
     %% server is the name of this module
-    NumberOfAcceptors = 100,
+    TransOpts = [ {ip, {0,0,0,0}}, {port, Port} ],
+    ProtoOpts = #{env => #{dispatch => Dispatch}},
     Status = 
-	cowboy:start_http(ezwebframe,
-			  NumberOfAcceptors,
-			  [{port, Port}],
-			  [{env, [{dispatch, Dispatch}]}]),
+    cowboy:start_clear(ezwebframe,
+            TransOpts,
+            ProtoOpts),
     case Status of
 	{error, _} ->
 	    io:format("websockets could not be started -- "
@@ -115,9 +118,9 @@ add_slash(I, Root) ->
     end.
 
 send_page(Type, Data, Req) ->
-    cowboy_req:reply(200, [{<<"Content-Type">>,
-			    list_to_binary(mime_type(Type))}],
-		     Data, Req).
+    cowboy_req:reply(200, #{<<"content-type">> => 
+                list_to_binary(mime_type(Type))},
+             Data, Req).
 
 
 path(Req) ->
@@ -138,7 +141,7 @@ terminate(_Reason,_Req,_State) ->
 %%----------------------------------------------------------------------
 %% websocket stuff
 
-websocket_handle({text, Msg}, Req, Pid) ->
+websocket_handle({text, Msg}, Pid) ->
     %% This is a Json message from the browser
     case catch decode(Msg) of
 	{'EXIT', _Why} ->
@@ -149,18 +152,23 @@ websocket_handle({text, Msg}, Req, Pid) ->
 	Other ->
 	    Pid ! {invalidMessageNotStruct, Other}
     end,
-    {ok, Req, Pid}.
+    {ok, Pid}.
 
-websocket_info({send,Str}, Req, Pid) ->
-    {reply, {text, Str}, Req, Pid, hibernate};
-websocket_info([{cmd,_}|_]=L, Req, Pid) ->
+websocket_init(Pid) ->
+    io:format("connection establish ! My Pid: ~p~n", [self()]),
+    Pid ! {self(), websocketReady},
+    {ok, Pid}.
+
+websocket_info({send,Str}, Pid) ->
+    {reply, {text, Str}, Pid, hibernate};
+websocket_info([{cmd,_}|_]=L, Pid) ->
     B = list_to_binary(encode([{struct,L}])),
-    {reply, {text, B}, Req, Pid, hibernate};
-websocket_info(Info, Req, Pid) ->
+    {reply, {text, B}, Pid, hibernate};
+websocket_info(Info, Pid) ->
     io:format("Handle_info Info:~p Pid:~p~n",[Info,Pid]),
-    {ok, Req, Pid, hibernate}.
+    {ok, Pid, hibernate}.
 
-websocket_terminate(_Reason, _Req, Pid) ->
+websocket_terminate(_Reason, Pid) ->
     io:format("websocket.erl terminate:~n"),
     exit(Pid, socketClosed),
     ok.

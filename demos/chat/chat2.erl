@@ -2,11 +2,16 @@
 -export([start/1]).
 
 start(Browser) ->
-    case whereis(irc) of
-	undefined -> irc:start();
-	_ -> true
-    end,
-    idle(Browser).
+    receive
+        {From, websocketReady} ->
+            case whereis(irc) of
+	            undefined -> irc:start();
+	            _ -> true
+            end,
+            idle(From)
+    after 1000 ->
+        start(Browser)
+    end.
 
 idle(Browser) ->
     receive
